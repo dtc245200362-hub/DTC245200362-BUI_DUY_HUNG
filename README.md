@@ -1,63 +1,138 @@
-# BÀI TẬP LỚN: HỆ THỐNG BOOKING TOUR / DU LỊCH (MICROSERVICES)
+# HỆ THỐNG BOOKING TOUR / DU LỊCH (MICROSERVICES)
 
-## 📌 THÔNG TIN SINH VIÊN
+## 📌 Thông Tin Sinh Viên
+
 * **Họ và tên:** Bùi Duy Hưng
-* **Mã số sinh viên (MSSV):** DTC245200362
-* **Lớp / Khóa:** CNTT-K23C
-* **Học phần:** Triển khai và Quản trị Hệ thống Phần mềm
+* **Mã sinh viên:** DTC245200362
+* **Lớp:** CNTT-K23C
 * **Trường:** Đại học Công nghệ Thông tin & Truyền thông (ICTU)
+* **Môn học:** Quản trị Hệ thống / Quản trị CSDL & Hạ tầng Cloud
 
----
+## 📖 Giới Thiệu Dự Án
 
-## 🛠 TỔNG QUAN KIẾN TRÚC HỆ THỐNG
-Hệ thống Booking Tour được triển khai theo mô hình **Microservices Containerized** trên nền tảng Docker & Docker Compose, bao gồm **9 dịch vụ containerized** chạy độc lập nhưng kết nối chặt chẽ với nhau:
+Dự án triển khai một hệ thống **Booking Tour / Du lịch** hoàn chỉnh theo kiến trúc **Microservices** hiện đại, được đóng gói hoàn toàn trong các Docker Container và điều phối qua `Docker Compose`.
 
-1. **Gateway / Reverse Proxy:** Nginx Reverse Proxy tiếp nhận request qua HTTPS (port 443), tự động chuyển hướng HTTP (port 80) và đính kèm các Security Headers bảo mật.
-2. **Web Application:** Container ứng dụng web đại diện cho hệ thống Booking Tour.
-3. **Database Layer:** PostgreSQL 15 quản trị dữ liệu chính, kết hợp Adminer GUI (port 8080) giúp truy vấn và quản lý CSDL trực quan.
-4. **Metrics Monitoring:** Prometheus (port 9090) cào metrics từ Node-Exporter (port 9100) và hệ thống, kết nối tới Grafana (port 3000) để trực quan hóa biểu đồ.
-5. **Centralized Logging:** Promtail thu thập log toàn bộ Docker containers và Nginx, đẩy về Loki Log Server (port 3100) để truy vấn theo ngôn ngữ LogQL.
+Hệ thống tích hợp đầy đủ các giải pháp cho hạ tầng sản xuất (Production-ready):
 
----
+1. **Reverse Proxy & TLS Encryption:** Nginx đóng vai trò API Gateway, điều hướng lưu lượng và mã hóa SSL/TLS.
+2. **Database Management:** PostgreSQL 15 lưu trữ dữ liệu ứng dụng, đi kèm Adminer làm giao diện quản trị GUI.
+3. **Metrics Monitoring:** Prometheus thu thập chỉ số hiệu năng (Metrics) từ Node Exporter và hiển thị trực quan qua Grafana Dashboard.
+4. **Centralized Logging:** Loki kết hợp với Promtail thu thập và quản lý log tập trung cho toàn bộ 9 container trong hạ tầng.
+5. **Security Hardening:** Áp dụng nguyên tắc đặc quyền tối thiểu (Least Privilege), chạy ứng dụng dưới dạng user không có quyền root (`non-root`).
 
-## 🌐 BẢNG BÀN GIAO CỔNG DỊCH VỤ (PORTS MATRIX)
+## 🏗 Kiến Trúc Hệ Thống (9 Microservices)
 
-| Dịch vụ | Container Name | Cổng Nội bộ | Cổng Public | Chức năng chính |
-| :--- | :--- | :--- | :--- | :--- |
-| **Nginx Proxy** | `booking_proxy` | 80, 443 | `80`, `443` | Reverse Proxy, SSL Certificate & Security Gateway |
-| **Web App** | `booking_webapp` | 80 | Internal | Microservice giao diện Booking Web |
-| **PostgreSQL** | `booking_db` | 5432 | Internal | Cơ sở dữ liệu quan hệ lưu trữ dữ liệu Tour |
-| **Adminer** | `booking_adminer` | 8080 | `8080` | Giao diện Web quản trị CSDL PostgreSQL |
-| **Prometheus** | `booking_prometheus` | 9090 | `9090` | Thu thập & lưu trữ thông số Metrics thời gian thực |
-| **Grafana** | `booking_grafana` | 3000 | `3000` | Trực quan hóa Dashboard theo dõi trạng thái hệ thống |
-| **Node Exporter** | `booking_node_exporter`| 9100 | Internal | Xuất dữ liệu phần cứng máy chủ (CPU, RAM, Disk) |
-| **Loki** | `booking_loki` | 3100 | `3100` | Log Aggregator lưu trữ & chỉ mục hóa tập trung |
-| **Promtail** | `booking_promtail` | 9080 | Internal | Log Agent thu thập log từ Docker container socket |
+```
+                       [ Client / Web Browser ]
+                                  │
+                                  ▼
+                   ┌──────────────────────────────┐
+                   │  Nginx Reverse Proxy Gateway │ (Ports 80/443 SSL)
+                   └──────────────┬───────────────┘
+                                  │
+         ┌────────────────────────┼────────────────────────┐
+         ▼                        ▼                        ▼
+┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
+│ Webapp Booking  │      │ Adminer GUI     │      │ Grafana UI      │
+│ (Frontend/App)  │      │ (Port 8080)     │      │ (Port 3000)     │
+└────────┬────────┘      └────────┬────────┘      └────────┬────────┘
+         │                        │                        │
+         ▼                        ▼                        │
+┌──────────────────────────────────────────┐               │
+│ PostgreSQL Database (Port 5432)          │               │
+└──────────────────────────────────────────┘               │
+                                                           │
+┌──────────────────────────────────────────────────────────┘
+│
+├─────────────────────────┐
+▼                         ▼
+┌──────────────────┐    ┌──────────────────┐
+│ Prometheus UI    │    │ Loki Log Server  │
+│ (Port 9090)      │    │ (Port 3100)      │
+└────────▲─────────┘    └────────▲─────────┘
+         │                       │
+┌────────┴─────────┐    ┌────────┴─────────┐
+│ Node Exporter    │    │ Promtail Agent   │
+│ (Port 9100)      │    │ (Log Collector)  │
+└──────────────────┘    └──────────────────┘
+```
 
----
+## 📂 Cấu Trúc Thư Mục Dự Án
 
-## 🔐 BẢO MẬT VÀ AN TOÀN HẠ TẦNG (HARDENING)
-* **Non-root Execution:** Các tiến trình ứng dụng và Nginx worker được phân quyền chạy dưới dạng non-root user (`uuidd`/`nginx`), loại bỏ nguy cơ leo thang đặc quyền (privilege escalation).
-* **Network Isolation:** Phân tách rõ ràng thành các mạng nội bộ `frontend-network`, `backend-network` (internal flag), và `monitoring-network`.
-* **Security Headers:** Nginx cấu hình sẵn `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff`, và `X-XSS-Protection: 1; mode=block`.
-* **Encrypted SSL/TLS:** Mọi lưu lượng web đều bắt buộc qua giao thức bảo mật HTTPS với TLSv1.2/TLSv1.3.
+```
+booking-tour-system/
+├── docker-compose.yml          # Tệp điều phối toàn bộ 9 containers
+├── README.md                   # Tài liệu hướng dẫn dự án
+├── .gitignore                  # Cấu hình bỏ qua các dữ liệu rác/database
+├── nginx/                      # Cấu hình Gateway Proxy & SSL
+│   ├── nginx.conf
+│   └── ssl/
+├── prometheus/                 # Cấu hình thu thập Metrics
+│   └── prometheus.yml
+├── loki/                       # Cấu hình lưu trữ Log tập trung
+│   └── loki-config.yaml
+└── promtail/                   # Cấu hình Agent gom Log
+    └── promtail-config.yaml
+```
 
----
+## 🌐 Các Dịch Vụ & Thông Số Cổng Access
 
-## 🚀 HƯỚNG DẪN KHỞI CHẠY HỆ THỐNG
+| Dịch vụ (Container) | Công dụng | Địa chỉ / Port truy cập | Tài khoản mặc định | 
+| ----- | ----- | ----- | ----- | 
+| **Nginx Proxy** | Reverse Proxy SSL/TLS Gateway | `https://localhost` | N/A | 
+| **Adminer** | Quản trị GUI Database PostgreSQL | `http://localhost:8080` | Server: `db`, DB: `booking_db` | 
+| **Grafana** | Dashboard hiển thị Metrics & Logs | `http://localhost:3000` | `admin` / `admin` | 
+| **Prometheus** | Hệ thống thu thập chỉ số hiệu năng | `http://localhost:9090` | N/A | 
+| **Node Exporter** | Thu thập Metrics từ OS máy chủ | `http://localhost:9100/metrics` | N/A | 
+| **Loki** | Log Aggregator Engine | `http://localhost:3100` | N/A | 
 
-### 1. Yêu cầu môi trường
-* Hệ điều hành: Ubuntu 20.04 LTS trở lên / Linux distribution
-* Đã cài đặt `docker` (v20.10+) và `docker-compose-plugin` (v2.0+)
+## 🛠 Hướng Dẫn Cài Đặt & Vận Hành
 
-### 2. Các bước triển khai
+### 1. Tiền đề yêu cầu
+
+* Hệ điều hành Linux (Ubuntu 20.04/22.04 LTS khuyên dùng)
+* Docker Engine ($\ge$ v20.10) & Docker Compose Plugin ($\ge$ v2.0)
+* Git Command Line Tool
+
+### 2. Tải mã nguồn về máy local
+
 ```bash
-# Clone repository về máy
-git clone [https://github.com/dtc245200362-hub/DTC245200362-BUI_DUY_HUNG.git](https://github.com/dtc245200362-hub/DTC245200362-BUI_DUY_HUNG.git)
+git clone https://github.com/dtc245200362-hub/DTC245200362-BUI_DUY_HUNG.git
 cd DTC245200362-BUI_DUY_HUNG
+```
 
-# Khởi chạy đồng loạt 9 microservices dưới dạng background daemon
+### 3. Khởi chạy toàn bộ hệ thống
+
+Khởi động tất cả 9 dịch vụ dưới dạng chế độ chạy ngầm (Background / Detached mode):
+
+```bash
 docker compose up -d
+```
 
-# Kiểm tra trạng thái hoạt động của các container
+### 4. Kiểm tra trạng thái hoạt động các Containers
+
+```bash
 docker compose ps
+```
+
+*Đảm bảo tất cả các container đều ở trạng thái `Up` hoặc `running`.*
+
+### 5. Dừng và dọn dẹp hệ thống khi cần
+
+```bash
+docker compose down
+```
+
+## 🔐 Bảo Mật & Tối Ưu Hạ Tầng (Hardening)
+
+* **SSL/TLS Self-Signed Encryption:** Toàn bộ lưu lượng truy cập Webapp được điều hướng bắt buộc qua giao thức HTTPS bảo mật (`Port 443`).
+* **Non-Root User Standard:** Dịch vụ Web, Prometheus, Grafana và Loki được cấu hình chạy dưới tài khoản người dùng hạn chế (`UID/GID 1000/10001`), ngăn chặn khai thác leo thang đặc quyền (Privilege Escalation).
+* **Isolate Network:** Cấu hình Docker Custom Network để phân tách lưu lượng giữa DB internal và các dịch vụ public Gateway.
+
+## 📜 Lịch Sử Đóng Góp (Git Commit History)
+
+* **Commit 1:** `Setup microservices infrastructure with Nginx SSL proxy and Adminer` - Khởi tạo hạ tầng cốt lõi Nginx Gateway, Webapp, PostgreSQL và Adminer.
+* **Commit 2:** `Integrate Prometheus metrics scraper and Grafana dashboard` - Tích hợp bộ đôi giám sát chỉ số hệ thống Prometheus và Grafana.
+* **Commit 3:** `Add Loki & Promtail log aggregation system and non-root security hardening` - Tích hợp hệ thống quản lý log tập trung Loki/Promtail và gia cố bảo mật Container non-root.
+
+© 2026 **Bùi Duy Hưng - ICTU**. Tất cả các quyền được bảo lưu.
