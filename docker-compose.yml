@@ -29,12 +29,20 @@ services:
       - backend-network
 
   webapp:
-    image: nginxdemos/hello:plain-text
+    build: ./webapp
     container_name: booking_webapp
     restart: always
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=booking_tour
+      - DB_USER=booking_admin
+      - DB_PASS=SecurePassword2026!@#
     networks:
       - frontend-network
       - backend-network
+    depends_on:
+      - db
 
   adminer:
     image: adminer:latest
