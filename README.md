@@ -135,4 +135,3 @@ docker compose down
 * **Commit 2:** `Integrate Prometheus metrics scraper and Grafana dashboard` - Tích hợp bộ đôi giám sát chỉ số hệ thống Prometheus và Grafana.
 * **Commit 3:** `Add Loki & Promtail log aggregation system and non-root security hardening` - Tích hợp hệ thống quản lý log tập trung Loki/Promtail và gia cố bảo mật Container non-root.
 
-© 2026 **Bùi Duy Hưng - ICTU**. Tất cả các quyền được bảo lưu.
